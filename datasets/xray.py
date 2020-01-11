@@ -211,7 +211,7 @@ class NIH_XrayDataset():
         if self.data_aug is not None:
             img = self.data_aug(img)
             
-        return {"PA":img, "lab":self.labels[idx]}
+        return {"PA":img, "lab":self.labels[idx], "idx":idx}
 
 class NIH_Google_XrayDataset():
 
@@ -386,7 +386,7 @@ class PC_XrayDataset():
         if self.data_aug is not None:
             img = self.data_aug(img)
 
-        return {"PA":img, "lab":self.labels[idx]}
+        return {"PA":img, "lab":self.labels[idx], "idx":idx}
 
 class CheX_XrayDataset():
 
@@ -476,7 +476,7 @@ class CheX_XrayDataset():
         if self.data_aug is not None:
             img = self.data_aug(img)
 
-        return {"PA":img, "lab":self.labels[idx]}
+        return {"PA":img, "lab":self.labels[idx], "idx":idx}
     
 class MIMIC_XrayDataset():
 
@@ -574,7 +574,7 @@ class MIMIC_XrayDataset():
         if self.data_aug is not None:
             img = self.data_aug(img)
 
-        return {"PA":img, "lab":self.labels[idx]}
+        return {"PA":img, "lab":self.labels[idx], "idx":idx, "img_path":img_path}
     
 class Openi_XrayDataset():
 
@@ -701,7 +701,7 @@ class Openi_XrayDataset():
         if self.data_aug is not None:
             img = self.data_aug(img)
             
-        return {"PA":img, "lab":self.labels[idx]}
+        return {"PA":img, "lab":self.labels[idx], "idx":idx}
     
 class ToPILImage(object):
     def __init__(self):
