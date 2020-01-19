@@ -76,7 +76,7 @@ def relabel_dataset(pathologies, dataset):
     dataset.pathologies = pathologies
 
 class Merge_XrayDataset():
-    def __init__(self, datasets, seed=0):
+    def __init__(self, datasets, seed=0, label_concat=False):
         np.random.seed(seed)  # Reset the seed so all runs are the same.
         self.datasets = datasets
         self.length = 0
@@ -97,8 +97,16 @@ class Merge_XrayDataset():
         else:
             print("WARN: not adding .labels")
         
-#         idxs = np.arange(self.length)   
-#         np.random.shuffle(idxs)
+        self.which_dataset = self.which_dataset.astype(int)
+        
+        if label_concat:
+            new_labels = np.zeros([self.labels.shape[0], self.labels.shape[1]*len(datasets)])*np.nan
+            for i, shift in enumerate(self.which_dataset):
+                size = self.labels.shape[1]
+                new_labels[i,shift*size:shift*size+size] = self.labels[i]
+            self.labels = new_labels
+            
+            
                 
     def __repr__(self):
         counts = [collections.Counter(items[~np.isnan(items)]).most_common() for items in self.labels.T]
@@ -109,7 +117,10 @@ class Merge_XrayDataset():
         return self.length
 
     def __getitem__(self, idx):
-        return self.datasets[int(self.which_dataset[idx])][idx  - int(self.offset[idx])]
+        item = self.datasets[int(self.which_dataset[idx])][idx  - int(self.offset[idx])]
+        item["lab"] = self.labels[idx]
+        item["source"] = self.which_dataset[idx]
+        return item
         
 class FilterDataset():
     def __init__(self, dataset, labels=None):
@@ -291,7 +302,7 @@ class NIH_Google_XrayDataset():
         if self.data_aug is not None:
             img = self.data_aug(img)
             
-        return {"PA":img, "lab":self.labels[idx]}
+        return {"PA":img, "lab":self.labels[idx], "idx":idx}
     
     
 class PC_XrayDataset():
@@ -574,7 +585,7 @@ class MIMIC_XrayDataset():
         if self.data_aug is not None:
             img = self.data_aug(img)
 
-        return {"PA":img, "lab":self.labels[idx], "idx":idx, "img_path":img_path}
+        return {"PA":img, "lab":self.labels[idx], "idx":idx}
     
 class Openi_XrayDataset():
 

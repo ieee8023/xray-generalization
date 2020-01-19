@@ -9,6 +9,7 @@ import numpy as np
 import torch
 import sklearn.metrics
 from sklearn.metrics import roc_auc_score, accuracy_score
+import datasets
 
 from tqdm import tqdm as tqdm_base
 def tqdm(*args, **kwargs):
@@ -189,7 +190,19 @@ def train_epoch(cfg, epoch, model, device, train_loader, optimizer, criterion, l
                     loss += weights[task]*task_loss
                 else:
                     loss += task_loss
-
+        
+        # here regularize the weight matrix when label_concat is used
+        if cfg.label_concat_reg:
+            if not cfg.label_concat:
+                raise Exception("cfg.label_concat must be true")
+            weight = model.classifier.weight
+            num_labels = len(datasets.xray.default_pathologies)
+            num_datasets = weight.shape[0]//num_labels
+            weight_stacked = weight.reshape(num_datasets,num_labels,-1)
+            label_concat_reg_lambda = torch.tensor(0.1).to(device).float()
+            for d in range(num_datasets):
+                dists = torch.pdist(weight_stacked[:,d], p=2).mean()
+                loss += label_concat_reg_lambda*dists
                 
         loss = loss.sum()
         

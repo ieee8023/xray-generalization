@@ -38,6 +38,8 @@ parser.add_argument('--taskweights', type=bool, default=True, help='')
 parser.add_argument('--featurereg', type=bool, default=False, help='')
 parser.add_argument('--weightreg', type=bool, default=False, help='')
 parser.add_argument('--data_aug', type=bool, default=True, help='')
+parser.add_argument('--label_concat', type=bool, default=False, help='')
+parser.add_argument('--label_concat_reg', type=bool, default=False, help='')
 
 cfg = parser.parse_args()
 
@@ -53,29 +55,34 @@ if cfg.data_aug:
 transforms = datasets.xray.XRayResizer(224)
 
 datas = []
+datas_names = []
 if "nih" in cfg.dataset:
     dataset = datasets.xray.NIH_XrayDataset(
         datadir="/lustre04/scratch/cohenjos/NIH/images-224",
         csvpath="/lustre03/project/6008064/jpcohen/ChestXray-NIHCC/Data_Entry_2017.csv",
         transform=transforms, data_aug=data_aug)
     datas.append(dataset)
+    datas_names.append("nih")
 if "pc" in cfg.dataset:
     dataset = datasets.xray.PC_XrayDataset(
         datadir="/lustre04/scratch/cohenjos/PC/images-224",
         csvpath="/lustre03/project/6008064/jpcohen/PADCHEST_SJ/labels_csv/PADCHEST_chest_x_ray_images_labels_160K_01.02.19.csv",
         transform=transforms, data_aug=data_aug)
     datas.append(dataset)
+    datas_names.append("pc")
 if "chex" in cfg.dataset:
     dataset = datasets.xray.CheX_XrayDataset(
         datadir="/lustre03/project/6008064/jpcohen/chexpert/CheXpert-v1.0-small",
         csvpath="/lustre03/project/6008064/jpcohen/chexpert/CheXpert-v1.0-small/train.csv",
         transform=transforms, data_aug=data_aug)
     datas.append(dataset)
+    datas_names.append("chex")
 if "google" in cfg.dataset:
     dataset = datasets.xray.NIH_Google_XrayDataset(datadir="/lustre04/scratch/cohenjos/NIH/images-224",
         csvpath="/lustre03/project/6008064/jpcohen/ChestXray-NIHCC/google_labels.csv",
         transform=transforms, data_aug=data_aug)
     datas.append(dataset)
+    datas_names.append("google")
 if "mimic_ch" in cfg.dataset:
     dataset = datasets.xray.MIMIC_XrayDataset(
           datadir="/lustre04/scratch/cohenjos/MIMIC/images-224/files",
@@ -83,6 +90,7 @@ if "mimic_ch" in cfg.dataset:
           metacsvpath="/lustre03/project/6008064/jpcohen/MIMICCXR-2.0/mimic-cxr-2.0.0-metadata.csv.gz",
           transform=transforms, data_aug=data_aug)
     datas.append(dataset)
+    datas_names.append("mimic_ch")
 if "mimic_nb" in cfg.dataset:
     dataset = datasets.xray.MIMIC_XrayDataset(
           datadir="/lustre04/scratch/cohenjos/MIMIC/images-224/files",
@@ -90,9 +98,19 @@ if "mimic_nb" in cfg.dataset:
           metacsvpath="/lustre03/project/6008064/jpcohen/MIMICCXR-2.0/mimic-cxr-2.0.0-metadata.csv.gz",
           transform=transforms, data_aug=data_aug)
     datas.append(dataset)
-    
-for dataset in datas:
-    datasets.xray.relabel_dataset(datasets.xray.default_pathologies, dataset)
+    datas_names.append("mimic_nb")
+if "openi" in cfg.dataset:
+    dataset = datasets.xray.Openi_XrayDataset(
+            datadir="/lustre03/project/6008064/jpcohen/OpenI/images/",
+            xmlpath="/lustre03/project/6008064/jpcohen/OpenI/ecgen-radiology/",
+            transform=transforms, data_aug=data_aug)
+    datas.append(dataset)
+    datas_names.append("openi")
+
+print("datas_names", datas_names)
+
+for d in datas:
+    datasets.xray.relabel_dataset(datasets.xray.default_pathologies, d)
 
 #cut out training sets
 for i, dataset in enumerate(datas):
@@ -117,7 +135,7 @@ elif len(datas) == 1:
     train_dataset = datas[0]
 else:
     print("merge datasets")
-    train_dataset = datasets.xray.Merge_XrayDataset(datas)
+    train_dataset = datasets.xray.Merge_XrayDataset(datas, label_concat=cfg.label_concat)
 
 
 # Setting the seed
@@ -129,18 +147,19 @@ if cfg.cuda:
     torch.backends.cudnn.deterministic = True
     torch.backends.cudnn.benchmark = False
 
+print("dataset.labels.shape", train_dataset.labels.shape)
     
 # create models
 if "densenet" in cfg.model:
-    model = models.densenet.DenseNet(num_classes=dataset.labels.shape[1], in_channels=1, 
+    model = models.densenet.DenseNet(num_classes=train_dataset.labels.shape[1], in_channels=1, 
                                      **models.densenet.get_densenet_params(cfg.model)) 
 elif "resnet101" in cfg.model:
-    model = torchvision.models.resnet101(num_classes=dataset.labels.shape[1], pretrained=False)
+    model = torchvision.models.resnet101(num_classes=train_dataset.labels.shape[1], pretrained=False)
     #patch for single channel
     model.conv1 = torch.nn.Conv2d(1, 64, kernel_size=7, stride=2, padding=3, bias=False)
     
 elif "shufflenet_v2_x2_0" in cfg.model:
-    model = torchvision.models.shufflenet_v2_x2_0(num_classes=dataset.labels.shape[1], pretrained=False)
+    model = torchvision.models.shufflenet_v2_x2_0(num_classes=train_dataset.labels.shape[1], pretrained=False)
     #patch for single channel
     model.conv1[0] = torch.nn.Conv2d(1, 24, kernel_size=3, stride=2, padding=1, bias=False)
 else:
