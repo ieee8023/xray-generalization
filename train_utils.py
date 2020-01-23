@@ -200,8 +200,8 @@ def train_epoch(cfg, epoch, model, device, train_loader, optimizer, criterion, l
             num_datasets = weight.shape[0]//num_labels
             weight_stacked = weight.reshape(num_datasets,num_labels,-1)
             label_concat_reg_lambda = torch.tensor(0.1).to(device).float()
-            for d in range(num_datasets):
-                dists = torch.pdist(weight_stacked[:,d], p=2).mean()
+            for task in range(num_labels):
+                dists = torch.pdist(weight_stacked[:,task], p=2).mean()
                 loss += label_concat_reg_lambda*dists
                 
         loss = loss.sum()
