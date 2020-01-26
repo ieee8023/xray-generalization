@@ -223,6 +223,66 @@ class NIH_XrayDataset():
             img = self.data_aug(img)
             
         return {"PA":img, "lab":self.labels[idx], "idx":idx}
+    
+class Kaggle_XrayDataset():
+
+    def __init__(self, datadir, csvpath, transform=None, data_aug=None, 
+                 nrows=None, seed=0,
+                 pure_labels=False, unique_patients=True):
+
+        np.random.seed(seed)  # Reset the seed so all runs are the same.
+        self.datadir = datadir
+        self.transform = transform
+        self.data_aug = data_aug
+        
+        self.pathologies = ["Pneumonia"]
+        
+        self.pathologies = sorted(self.pathologies)
+
+        # Load data
+        self.csvpath = csvpath
+        self.csv = pd.read_csv(self.csvpath, nrows=nrows)
+        self.MAXVAL = 255  # Range [0 255]
+
+            
+        # Get our classes.
+        self.labels = []
+        self.labels.append(self.csv["Target"].values)
+            
+        self.labels = np.asarray(self.labels).T
+        self.labels = self.labels.astype(np.float32)
+
+    def __repr__(self):
+        counts = [collections.Counter(items[~np.isnan(items)]).most_common() for items in self.labels.T]
+        pprint.pprint(dict(zip(self.pathologies,counts)))
+        return self.__class__.__name__ + " num_samples={}".format(len(self))
+    
+    def __len__(self):
+        return len(self.labels)
+
+    def __getitem__(self, idx):
+        imgid = self.csv['patientId'].iloc[idx]
+        img_path = os.path.join(self.datadir, imgid + ".jpg")
+        #print(img_path)
+        img = imread(img_path)
+        img = normalize(img, self.MAXVAL)  
+
+        # Check that images are 2D arrays
+        if len(img.shape) > 2:
+            img = img[:, :, 0]
+        if len(img.shape) < 2:
+            print("error, dimension lower than 2 for image")
+
+        # Add color channel
+        img = img[None, :, :]                    
+                               
+        if self.transform is not None:
+            img = self.transform(img)
+
+        if self.data_aug is not None:
+            img = self.data_aug(img)
+            
+        return {"PA":img, "lab":self.labels[idx], "idx":idx}
 
 class NIH_Google_XrayDataset():
 
