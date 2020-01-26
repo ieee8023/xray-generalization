@@ -75,8 +75,17 @@ def relabel_dataset(pathologies, dataset):
     dataset.labels = new_labels
     dataset.pathologies = pathologies
 
-class Merge_XrayDataset():
+class XrayDataset():
+    def __init__(self):
+        pass
+    def totals(self):
+        counts = [dict(collections.Counter(items[~np.isnan(items)]).most_common()) for items in self.labels.T]
+        return dict(zip(self.pathologies,counts))
+        
+    
+class Merge_XrayDataset(XrayDataset):
     def __init__(self, datasets, seed=0, label_concat=False):
+        super(Merge_XrayDataset, self).__init__()
         np.random.seed(seed)  # Reset the seed so all runs are the same.
         self.datasets = datasets
         self.length = 0
@@ -109,8 +118,7 @@ class Merge_XrayDataset():
             
                 
     def __repr__(self):
-        counts = [collections.Counter(items[~np.isnan(items)]).most_common() for items in self.labels.T]
-        pprint.pprint(dict(zip(self.pathologies,counts)))
+        pprint.pprint(self.totals())
         return self.__class__.__name__ + " num_samples={}".format(len(self))
     
     def __len__(self):
@@ -122,8 +130,9 @@ class Merge_XrayDataset():
         item["source"] = self.which_dataset[idx]
         return item
         
-class FilterDataset():
+class FilterDataset(XrayDataset):
     def __init__(self, dataset, labels=None):
+        super(FilterDataset, self).__init__()
         self.dataset = dataset
         self.pathologies = dataset.pathologies
         
@@ -144,8 +153,7 @@ class FilterDataset():
         self.labels = self.dataset.labels[self.idxs]
                 
     def __repr__(self):
-        counts = [collections.Counter(items[~np.isnan(items)]).most_common() for items in self.labels.T]
-        pprint.pprint(dict(zip(self.pathologies,counts)))
+        pprint.pprint(self.totals())
         return self.__class__.__name__ + " num_samples={}".format(len(self))
     
     def __len__(self):
@@ -154,11 +162,12 @@ class FilterDataset():
     def __getitem__(self, idx):
         return self.dataset[self.idxs[idx]]
 
-class NIH_XrayDataset():
+class NIH_XrayDataset(XrayDataset):
 
     def __init__(self, datadir, csvpath, transform=None, data_aug=None, 
                  nrows=None, seed=0,
                  pure_labels=False, unique_patients=True):
+        super(NIH_XrayDataset, self).__init__()
 
         np.random.seed(seed)  # Reset the seed so all runs are the same.
         self.datadir = datadir
@@ -193,8 +202,7 @@ class NIH_XrayDataset():
         self.labels = self.labels.astype(np.float32)
 
     def __repr__(self):
-        counts = [collections.Counter(items[~np.isnan(items)]).most_common() for items in self.labels.T]
-        pprint.pprint(dict(zip(self.pathologies,counts)))
+        pprint.pprint(self.totals())
         return self.__class__.__name__ + " num_samples={}".format(len(self))
     
     def __len__(self):
@@ -224,12 +232,13 @@ class NIH_XrayDataset():
             
         return {"PA":img, "lab":self.labels[idx], "idx":idx}
     
-class Kaggle_XrayDataset():
+class Kaggle_XrayDataset(XrayDataset):
 
     def __init__(self, datadir, csvpath, transform=None, data_aug=None, 
                  nrows=None, seed=0,
                  pure_labels=False, unique_patients=True):
 
+        super(Kaggle_XrayDataset, self).__init__()
         np.random.seed(seed)  # Reset the seed so all runs are the same.
         self.datadir = datadir
         self.transform = transform
@@ -253,8 +262,7 @@ class Kaggle_XrayDataset():
         self.labels = self.labels.astype(np.float32)
 
     def __repr__(self):
-        counts = [collections.Counter(items[~np.isnan(items)]).most_common() for items in self.labels.T]
-        pprint.pprint(dict(zip(self.pathologies,counts)))
+        pprint.pprint(self.totals())
         return self.__class__.__name__ + " num_samples={}".format(len(self))
     
     def __len__(self):
@@ -284,12 +292,13 @@ class Kaggle_XrayDataset():
             
         return {"PA":img, "lab":self.labels[idx], "idx":idx}
 
-class NIH_Google_XrayDataset():
+class NIH_Google_XrayDataset(XrayDataset):
 
     def __init__(self, datadir, csvpath, transform=None, data_aug=None, 
                  nrows=None, seed=0,
                  pure_labels=False, unique_patients=True):
 
+        super(NIH_Google_XrayDataset, self).__init__()
         np.random.seed(seed)  # Reset the seed so all runs are the same.
         self.datadir = datadir
         self.transform = transform
@@ -333,8 +342,7 @@ class NIH_Google_XrayDataset():
         self.pathologies = np.char.replace(self.pathologies, "Airspace opacity", "Lung Opacity")
 
     def __repr__(self):
-        counts = [collections.Counter(items[~np.isnan(items)]).most_common() for items in self.labels.T]
-        pprint.pprint(dict(zip(self.pathologies,counts)))
+        pprint.pprint(self.totals())
         return self.__class__.__name__ + " num_samples={}".format(len(self))
     
     def __len__(self):
@@ -365,11 +373,12 @@ class NIH_Google_XrayDataset():
         return {"PA":img, "lab":self.labels[idx], "idx":idx}
     
     
-class PC_XrayDataset():
+class PC_XrayDataset(XrayDataset):
 
     def __init__(self, datadir, csvpath, transform=None, data_aug=None,
                  flat_dir=True, seed=0, unique_patients=True):
 
+        super(PC_XrayDataset, self).__init__()
         np.random.seed(seed)  # Reset the seed so all runs are the same.
 
         self.pathologies = ["Atelectasis", "Consolidation", "Infiltration",
@@ -428,8 +437,7 @@ class PC_XrayDataset():
         self.labels = self.labels.astype(np.float32)
         
     def __repr__(self):
-        counts = [collections.Counter(items[~np.isnan(items)]).most_common() for items in self.labels.T]
-        pprint.pprint(dict(zip(self.pathologies,counts)))
+        pprint.pprint(self.totals())
         return self.__class__.__name__ + " num_samples={}".format(len(self))
     
     def __len__(self):
@@ -459,11 +467,12 @@ class PC_XrayDataset():
 
         return {"PA":img, "lab":self.labels[idx], "idx":idx}
 
-class CheX_XrayDataset():
+class CheX_XrayDataset(XrayDataset):
 
     def __init__(self, datadir, csvpath, transform=None, data_aug=None,
                  flat_dir=True, seed=0, unique_patients=True):
 
+        super(CheX_XrayDataset, self).__init__()
         np.random.seed(seed)  # Reset the seed so all runs are the same.
         self.MAXVAL = 255
         
@@ -517,8 +526,7 @@ class CheX_XrayDataset():
         
         
     def __repr__(self):
-        counts = [collections.Counter(items[~np.isnan(items)]).most_common() for items in self.labels.T]
-        pprint.pprint(dict(zip(self.pathologies,counts)))
+        pprint.pprint(self.totals())
         return self.__class__.__name__ + " num_samples={}".format(len(self))
     
     def __len__(self):
@@ -549,11 +557,12 @@ class CheX_XrayDataset():
 
         return {"PA":img, "lab":self.labels[idx], "idx":idx}
     
-class MIMIC_XrayDataset():
+class MIMIC_XrayDataset(XrayDataset):
 
     def __init__(self, datadir, csvpath,metacsvpath, transform=None, data_aug=None,
                  flat_dir=True, seed=0, unique_patients=True):
 
+        super(MIMIC_XrayDataset, self).__init__()
         np.random.seed(seed)  # Reset the seed so all runs are the same.
         self.MAXVAL = 255
         
@@ -613,8 +622,7 @@ class MIMIC_XrayDataset():
         
         
     def __repr__(self):
-        counts = [collections.Counter(items[~np.isnan(items)]).most_common() for items in self.labels.T]
-        pprint.pprint(dict(zip(self.pathologies,counts)))
+        pprint.pprint(self.totals())
         return self.__class__.__name__ + " num_samples={}".format(len(self))
     
     def __len__(self):
@@ -647,7 +655,7 @@ class MIMIC_XrayDataset():
 
         return {"PA":img, "lab":self.labels[idx], "idx":idx}
     
-class Openi_XrayDataset():
+class Openi_XrayDataset(XrayDataset):
 
     def __init__(self, datadir, xmlpath, 
                  dicomcsv_path=(thispath + "/nlmcxr_dicom_metadata.csv.gz"),
@@ -657,6 +665,7 @@ class Openi_XrayDataset():
                  nrows=None, seed=0,
                  pure_labels=False, unique_patients=True):
 
+        super(Openi_XrayDataset, self).__init__()
         import xml
         np.random.seed(seed)  # Reset the seed so all runs are the same.
         self.datadir = datadir
@@ -743,8 +752,7 @@ class Openi_XrayDataset():
         self.pathologies = np.char.replace(self.pathologies, "Lesion", "Lung Lesion")
 
     def __repr__(self):
-        counts = [collections.Counter(items[~np.isnan(items)]).most_common() for items in self.labels.T]
-        pprint.pprint(dict(zip(self.pathologies,counts)))
+        pprint.pprint(self.totals())
         return self.__class__.__name__ + " num_samples={}".format(len(self))
     
     def __len__(self):
