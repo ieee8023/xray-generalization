@@ -106,6 +106,14 @@ if "openi" in cfg.dataset:
             transform=transforms, data_aug=data_aug)
     datas.append(dataset)
     datas_names.append("openi")
+if "kaggle" in cfg.dataset:
+    dataset = datasets.xray.Kaggle_XrayDataset(
+            datadir="/lustre03/project/6008064/jpcohen/kaggle-pneumonia/stage_2_train_images_jpg",
+            csvpath="/lustre03/project/6008064/jpcohen/kaggle-pneumonia/stage_2_train_labels.csv",
+            transform=transforms, data_aug=data_aug)
+    datas.append(dataset)
+    datas_names.append("kaggle")
+
 
 print("datas_names", datas_names)
 

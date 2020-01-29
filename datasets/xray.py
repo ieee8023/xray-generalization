@@ -244,7 +244,7 @@ class Kaggle_XrayDataset(XrayDataset):
         self.transform = transform
         self.data_aug = data_aug
         
-        self.pathologies = ["Pneumonia"]
+        self.pathologies = ["Pneumonia", "Lung Opacity"]
         
         self.pathologies = sorted(self.pathologies)
 
@@ -257,6 +257,7 @@ class Kaggle_XrayDataset(XrayDataset):
         # Get our classes.
         self.labels = []
         self.labels.append(self.csv["Target"].values)
+        self.labels.append(self.csv["Target"].values) #same labels for both
             
         self.labels = np.asarray(self.labels).T
         self.labels = self.labels.astype(np.float32)
